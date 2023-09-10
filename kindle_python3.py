@@ -18,7 +18,7 @@ def get_sections(filename):
     return content.split(BOUNDARY)
 
 
-def get_clip(section):
+def get_clip(section: str):
     clip = {}
 
     lines = [l for l in section.split(u'\r\n') if l]
@@ -27,12 +27,26 @@ def get_clip(section):
 
     clip['book'] = lines[0]
     match = re.search(r'(\d+)-\d+', lines[1])
-    if not match:
-        return
-    position = match.group(1)
+    
+    position = 0
+    if match:
+        position = match.group(1)
+    else:
+        # some notes has only 1 page location
+        match = re.search(r'Location \d+', lines[1])
+        if match:
+            position = match.group(0).split(' ')[1]
+        else:
+            print("Error parsing position: %s" % lines[1])
+            return
 
     clip['position'] = int(position)
-    clip['content'] = lines[2]
+
+    # If it's a note, add a > to the beginning of the note
+    if lines[1].find("- Your Note on ") != -1:
+        clip['content'] = ">" + lines[2]
+    else:
+        clip['content'] = lines[2]
 
     return clip
 
@@ -47,7 +61,7 @@ def export_txt(clips):
             lines.append(clips[book][pos].encode('utf-8'))
 
         filename = os.path.join(OUTPUT_DIR, u"%s.md" % book)
-        # with open(filename, 'wb') as f:
+
         with open(filename, 'wb') as f:
             f.write(b"\n\n---\n\n".join(lines))
 
