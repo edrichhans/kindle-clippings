@@ -5,6 +5,7 @@ import collections
 import json
 import os
 import re
+from difflib import SequenceMatcher
 
 BOUNDARY = u"==========\r\n"
 DATA_FILE = u"clips.json"
@@ -60,7 +61,7 @@ def export_txt(clips):
     """
     for book in clips:
         lines = []
-        for pos in sorted(clips[book], key=int):
+        for pos in sorted(clips[book], key=float):
             lines.append(clips[book][pos].encode('utf-8'))
 
         filename = os.path.join(OUTPUT_DIR, u"%s.md" % book)
@@ -89,6 +90,26 @@ def save_clips(clips):
     with open(DATA_FILE, 'w') as f:
         json.dump(clips, f)
 
+# This method optionally increments the position if the content is different enough
+def incrementPositionDecimalIfDifferent(positionStr: str, book: dict, newContent: str):
+    positionParts = positionStr.split('.')
+    # Immediately return if there is decimal. The source should be str(int)
+    if len(positionParts) > 1:
+        return positionStr
+
+    # Increment the decimal based on the latest position
+    while True:
+        existingContent = book.get(positionStr, None)
+        if not existingContent:
+            return positionStr
+        
+        # Overwrite the existing content if the new content is similar enough
+        s = SequenceMatcher(None, existingContent, newContent)
+        if s.ratio() > 0.8:
+            return positionStr
+
+        positionStr = str(float(positionStr) + 0.1)
+            
 
 def main():
     # load old clips
@@ -100,7 +121,16 @@ def main():
     for section in sections:
         clip = get_clip(section)
         if clip:
-            clips[clip['book']][str(clip['position'])] = clip['content']
+            bookName = clip['book']
+            positionStr = str(clip['position'])
+
+            existingContent = clips.get(bookName, {}).get(positionStr, None)
+            newContent = clip['content']
+
+            if existingContent:
+                positionStr = incrementPositionDecimalIfDifferent(positionStr, clips[bookName], newContent)
+
+            clips[bookName][positionStr] = newContent
 
     # remove key with empty value
     clips = {k: v for k, v in clips.items() if v}
@@ -108,7 +138,6 @@ def main():
     # save/export clips
     save_clips(clips)
     export_txt(clips)
-
 
 if __name__ == '__main__':
     main()
