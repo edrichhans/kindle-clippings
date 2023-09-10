@@ -63,7 +63,7 @@ def export_txt(clips):
         filename = os.path.join(OUTPUT_DIR, u"%s.md" % book)
 
         with open(filename, 'wb') as f:
-            f.write(b"\n\n---\n\n".join(lines))
+            f.write(b"\n\n".join(lines))
 
 
 def load_clips():
