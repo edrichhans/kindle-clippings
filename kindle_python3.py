@@ -48,6 +48,9 @@ def get_clip(section: str):
     else:
         clip['content'] = lines[2]
 
+    # Append position
+    clip['content'] += " (Loc. %s)" % position
+
     return clip
 
 
