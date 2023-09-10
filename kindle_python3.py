@@ -43,7 +43,7 @@ def export_txt(clips):
     """
     for book in clips:
         lines = []
-        for pos in sorted(clips[book]):
+        for pos in sorted(clips[book], key=int):
             lines.append(clips[book][pos].encode('utf-8'))
 
         filename = os.path.join(OUTPUT_DIR, u"%s.md" % book)
